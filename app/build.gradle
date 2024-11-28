@@ -69,4 +69,7 @@ dependencies {
     implementation platform("com.google.firebase:firebase-bom:33.6.0")
     implementation "com.google.firebase:firebase-analytics-ktx"
     implementation 'com.google.firebase:firebase-ml-modeldownloader-ktx:25.0.1'
+
+    // Lottie
+    implementation 'com.airbnb.android:lottie:6.6.0'
 }

@@ -1,4 +1,4 @@
-package com.example.animalscnntflite;
+package com.example.mlprojects;
 
 import org.junit.Test;
 

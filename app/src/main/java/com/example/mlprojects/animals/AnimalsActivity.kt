@@ -1,5 +1,6 @@
-package com.example.animalscnntflite
+package com.example.mlprojects.animals
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -10,6 +11,7 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.mlprojects.R
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.io.IOException
@@ -18,7 +20,7 @@ import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
-class MainActivity : AppCompatActivity() {
+class AnimalsActivity : AppCompatActivity() {
 
     private var imgInput: ImageView? = null
     private var txtPrediccion: TextView? = null
@@ -33,7 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.animals_activity)
 
         imgInput = findViewById(R.id.imgInput)
         txtPrediccion = findViewById(R.id.txtPrediccion)
@@ -209,5 +211,9 @@ class MainActivity : AppCompatActivity() {
         //constantes para permisos de la camara
         private const val IMAGE_PICK_CODE = 1000
         private const val PERMISSION_CODE = 1001
+
+        fun startActivity(context: Context) {
+            context.startActivity(Intent(context, AnimalsActivity::class.java))
+        }
     }
 }

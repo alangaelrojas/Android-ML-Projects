@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "13388958531",
+    "project_id": "aggr-petclassification",
+    "storage_bucket": "aggr-petclassification.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:13388958531:android:a4faaf8e7075ddbf00fdf6",
+        "android_client_info": {
+          "package_name": "com.example.mlprojects"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8eZNch0rwtPHUAIKJiZENJapjSzqS6dY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

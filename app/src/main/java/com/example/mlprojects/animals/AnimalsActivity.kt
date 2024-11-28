@@ -12,6 +12,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.mlprojects.R
+import com.example.mlprojects.databinding.AnimalsActivityBinding
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.io.IOException
@@ -22,25 +23,26 @@ import java.nio.channels.FileChannel
 
 class AnimalsActivity : AppCompatActivity() {
 
-    private var imgInput: ImageView? = null
-    private var txtPrediccion: TextView? = null
-    private var btnElegir: Button? = null
-    private var btnPredecir: Button? = null
+    private lateinit var binding: AnimalsActivityBinding
+
+    private val imgInput: ImageView get() = binding.imgInput
+    private val txtPrediccion: TextView get() = binding.txtPrediccion
+    private val btnElegir: Button get() = binding.btnElegir
+    private val btnPredecir: Button get() = binding.btnPredecir
 
     private var tflite: Interpreter? = null
     private var options: Interpreter.Options = Interpreter.Options()
     private var imgData: ByteBuffer? = null
     private var imgPixels: IntArray = IntArray(IMG_SIZE * IMG_SIZE) //(32*32) 1024px
+
+    private val labels = arrayOf("GATO", "PERRO", "PANDA")
+    private val NUM_CLASSES = labels.size
     private var result: Array<FloatArray> = Array(1) { FloatArray(NUM_CLASSES) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.animals_activity)
-
-        imgInput = findViewById(R.id.imgInput)
-        txtPrediccion = findViewById(R.id.txtPrediccion)
-        btnElegir = findViewById(R.id.btnElegir)
-        btnPredecir = findViewById(R.id.btnPredecir)
+        binding = AnimalsActivityBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         //Inicializar interpreter tensorflow-lite
         tflite = Interpreter(loadModelFile(), options)
@@ -56,31 +58,17 @@ class AnimalsActivity : AppCompatActivity() {
         imgData?.order(ByteOrder.nativeOrder())
 
         // Elegir imagen
-        btnElegir?.setOnClickListener {
+        btnElegir.setOnClickListener {
             chooseImageFromGallery()
         }
         //boton predecir
-        btnPredecir?.setOnClickListener {
-            imgInput?.invalidate()
-            val drawable = imgInput?.getDrawable() as BitmapDrawable
-            val bitmap = drawable.bitmap
-            val bitmap_resize =
-                getResizedBitmap(bitmap, IMG_SIZE, IMG_SIZE) //bitmap.. ancho, altura
-            convertBitmapToByteBuffer(bitmap_resize)
-
-            tflite!!.run(imgData, result)
-            txtPrediccion?.setText("")
-            val labels = arrayOf("GATO", "PERRO", "PANDA")
-
-            //txtPrediccion.setText("result= "+ Arrays.toString(result[0]));
-            //txtPrediccion.setText("result= " + argmax(result[0])+" normal=> "+Arrays.toString(result[0]));
-            txtPrediccion?.text = """
-                        ${labels[argmax(result[0])]}
-                        Probs:${result[0].contentToString()}
-                        """.trimIndent()
+        btnPredecir.setOnClickListener {
+            predict()
         }
     }
 
+    /***
+     * 1 - Cargar el modelo TFLite  **/
     @Throws(IOException::class)
     private fun loadModelFile(): MappedByteBuffer {
         val fileDescriptor = this.assets.openFd("animals.tflite")
@@ -91,10 +79,39 @@ class AnimalsActivity : AppCompatActivity() {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
+    /***
+     * 2 - Seleccionar la imagen  **/
     private fun chooseImageFromGallery() {
-        val intent = Intent(Intent.ACTION_PICK)
-        intent.setType("image/*")
+        val intent = Intent()
+        // Show only images, no videos or anything else
+        intent.type = "image/*"
+        intent.action = Intent.ACTION_GET_CONTENT
         startActivityForResult(intent, IMAGE_PICK_CODE)
+    }
+
+    /***
+     * 2 - Intentar predecir la imagen  **/
+    private fun predict() {
+        // Obtener la imagen de la vista de imagen y convertirla en un mapa de bits
+        imgInput.invalidate()
+        val drawable = imgInput.drawable as BitmapDrawable
+        val bitmap = drawable.bitmap
+        val bitmap_resize = getResizedBitmap(bitmap, IMG_SIZE, IMG_SIZE) //bitmap.. ancho, altura
+
+        // Convertir el mapa de bits en un ByteBuffer
+        convertBitmapToByteBuffer(bitmap_resize)
+
+        // Realizar la inferencia
+        tflite?.run(imgData, result)
+
+        // Mostrar el resultado
+        txtPrediccion.text = ""
+
+        //argmax(result[0]) => 0, 1, 2
+        txtPrediccion.text = """
+                        ${labels[argmax(result[0])]}
+                        Probs:${result[0].contentToString()}
+                        """.trimIndent()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -102,6 +119,7 @@ class AnimalsActivity : AppCompatActivity() {
         if (resultCode == RESULT_OK && requestCode == IMAGE_PICK_CODE) {
             checkNotNull(data)
             imgInput!!.setImageURI(data.data)
+            txtPrediccion.text = ""
         }
     }
 
@@ -138,13 +156,13 @@ class AnimalsActivity : AppCompatActivity() {
             return
         }
         //rebobinar el búfer
-        imgData!!.rewind()
+        imgData?.rewind()
+
         bitmap.getPixels(imgPixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         var pixel = 0
         for (i in 0 until IMG_SIZE) {
             for (j in 0 until IMG_SIZE) {
                 val value = imgPixels[pixel++]
-                //imgData.putFloat(convertPixel(value));
                 addPixelValue(value)
             }
         }
@@ -169,11 +187,9 @@ class AnimalsActivity : AppCompatActivity() {
      * http://borg.csueastbay.edu/~grewe/CS663/Exercises/ExerciseA4Before.html
      * */
     private fun addPixelValue(pixelValue: Int) {
-        imgData!!.putFloat(((pixelValue shr 16) and 0xFF) / 255f) //Normaliza canal Rojo (R)
-        imgData!!.putFloat(((pixelValue shr 8) and 0xFF) / 255f) //Normaliza canal Verde (G)
-        imgData!!.putFloat((pixelValue and 0xFF) / 255f) //Normaliza canal Azul (B)
-        // >> : Operador a nivel de bits (shifts the bits to right) Cambia los bits a la derecha
-        // https://stackoverflow.com/questions/6126439/what-does-0xff-do
+        imgData?.putFloat(((pixelValue shr 16) and 0xFF) / 255f) //Normaliza canal Rojo (R)
+        imgData?.putFloat(((pixelValue shr 8) and 0xFF) / 255f) //Normaliza canal Verde (G)
+        imgData?.putFloat((pixelValue and 0xFF) / 255f) //Normaliza canal Azul (B)
     }
 
 
@@ -185,6 +201,10 @@ class AnimalsActivity : AppCompatActivity() {
         imgData.putFloat(mean / 127.5f - 1.0f);
     }
     */
+
+    /***
+     * The argmax function finds the index of the maximum value in a given FloatArray.
+     * */
     private fun argmax(probs: FloatArray): Int { //[0.76111, 0.50311, 0.30111
         Log.d("array", "=> " + probs.contentToString())
         var maxIds = -1
@@ -200,11 +220,10 @@ class AnimalsActivity : AppCompatActivity() {
 
     companion object {
         /*
-    ByteBuffer: Es solo un contenedor o tanque de almacenamiento para leer o escribir datos en.
-    Se le asignan datos utilizando la API allocateDirect()
-    */
+            ByteBuffer: Es solo un contenedor o tanque de almacenamiento para leer o escribir datos en.
+            Se le asignan datos utilizando la API allocateDirect()
+        */
         private const val IMG_SIZE = 32
-        private const val NUM_CLASSES = 3
         private const val BATCH_SIZE = 1
         private const val PIXEL_SIZE = 3 //3 canales
 

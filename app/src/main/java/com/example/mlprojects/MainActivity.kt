@@ -8,6 +8,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.example.mlprojects.animals.AnimalsActivity
 import com.example.mlprojects.content_recommendation.RecommendationsActivity
 import com.example.mlprojects.databinding.ActivityMainBinding
+import com.example.mlprojects.walking.RunningWalkingClassifierActivity
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -19,7 +20,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnAnimals.setOnClickListener { AnimalsActivity.startActivity(this) }
         binding.btnRecommendations.setOnClickListener { RecommendationsActivity.startActivity(this) }
-        binding.btnRunningWalking.setOnClickListener { }
+        binding.btnRunningWalking.setOnClickListener { RunningWalkingClassifierActivity.startActivity(this) }
 
     }
 }
